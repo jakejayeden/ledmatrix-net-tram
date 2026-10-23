@@ -1,0 +1,35 @@
+{
+  "id": "net-tram-departures",
+  "name": "NET Tram Departures",
+  "version": "1.0.0",
+  "author": "Community",
+  "description": "NET tram departures from a configured Traveline stop, tuned for 128x32 LEDMatrix displays.",
+  "entry_point": "manager.py",
+  "class_name": "NETTramDeparturesPlugin",
+  "category": "transit",
+  "tags": [
+    "net",
+    "nottingham",
+    "tram",
+    "traveline",
+    "transit",
+    "departures"
+  ],
+  "display_modes": [
+    "net_tram_departures"
+  ],
+  "update_interval": 30,
+  "default_duration": 15,
+  "config_schema": "config_schema.json",
+  "compatible_versions": [
+    ">=2.0.0"
+  ],
+  "versions": [
+    {
+      "released": "2026-10-23",
+      "version": "1.0.0",
+      "ledmatrix_min_version": "2.0.0"
+    }
+  ],
+  "last_updated": "2026-10-23"
+}
