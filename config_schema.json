@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "NET Tram Departures",
+  "description": "Upcoming tram departures from a configured Traveline stop page.",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable this plugin"
+    },
+    "stop_id": {
+      "type": "string",
+      "default": "YOUR_STOP_ID",
+      "minLength": 1,
+      "maxLength": 32,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "description": "Traveline/ATCO stop code. Enter it locally in LEDMatrix settings."
+    },
+    "stop_name": {
+      "type": "string",
+      "default": "Tram Stop",
+      "maxLength": 40,
+      "description": "Heading shown on the matrix. Enter your preferred stop name locally."
+    },
+    "max_departures": {
+      "type": "integer",
+      "default": 2,
+      "minimum": 1,
+      "maximum": 2,
+      "description": "Number of departures shown on a 128x32 panel"
+    },
+    "update_interval": {
+      "type": "integer",
+      "default": 30,
+      "minimum": 15,
+      "maximum": 300,
+      "description": "Seconds between Traveline page refreshes"
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 15,
+      "minimum": 3,
+      "maximum": 300,
+      "description": "Seconds to show this screen in the display rotation"
+    }
+  },
+  "required": ["enabled", "stop_id"],
+  "additionalProperties": false
+}
