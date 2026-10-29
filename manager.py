@@ -194,15 +194,10 @@ class NETTramDeparturesPlugin(BasePlugin):
         return results
 
     @staticmethod
-    def _font(size=10, bold=False):
-        path = (
-            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"
-            if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
-        )
-        try:
-            return ImageFont.truetype(path, size)
-        except Exception:
-            return ImageFont.load_default()
+    def _font():
+        # Match the Apple Calendar plugin exactly: Pillow's built-in default
+        # bitmap font. Do not substitute a TTF/BDF font here.
+        return ImageFont.load_default()
 
     @staticmethod
     def _fit(draw, text, font, max_width):
@@ -214,34 +209,30 @@ class NETTramDeparturesPlugin(BasePlugin):
         return text + ".."
 
     def display(self, force_clear=False):
-        width = self.display_manager.width
-        height = self.display_manager.height
-        image = Image.new("RGB", (width, height), BG)
+        # The target panel is 128x32. Using the same Pillow default font and
+        # drawing path as Apple Calendar keeps typography visually consistent.
+        image = Image.new("RGB", (128, 32), BG)
         draw = ImageDraw.Draw(image)
+        font = self._font()
 
-        header_font = self._font(8, True)
-        row_font = self._font(10, True)
-        dest_font = self._font(7, False)
-        clock_font = self._font(8, True)
-        unit_font = self._font(7, False)
-
+        width = 128
         clock = self.last_updated or "--:--"
-        clock_width = draw.textbbox((0, 0), clock, font=clock_font)[2]
+        clock_width = draw.textbbox((0, 0), clock, font=font)[2]
         clock_x = width - clock_width - 1
         header = self._fit(
             draw,
             self.stop_name or self.stop_id,
-            header_font,
+            font,
             max(20, clock_x - 4),
         )
-        draw.text((1, 0), header, font=header_font, fill=WHITE)
-        draw.text((clock_x, 0), clock, font=clock_font, fill=WHITE)
-        draw.line((0, 10, width - 1, 10), fill=TRAM)
+        draw.text((1, 0), header, font=font, fill=WHITE)
+        draw.text((clock_x, 0), clock, font=font, fill=WHITE)
+        draw.line((0, 9, width - 1, 9), fill=TRAM)
 
         if not self.departures:
             message = "DATA ERROR" if self.error else "NO TRAMS"
             colour = ERROR if self.error else SCHEDULED
-            draw.text((2, 16), message, font=row_font, fill=colour)
+            draw.text((2, 14), message, font=font, fill=colour)
         else:
             for index, departure in enumerate(self.departures[:2]):
                 y = 11 + index * 10
@@ -249,28 +240,24 @@ class NETTramDeparturesPlugin(BasePlugin):
                 status = departure.get("status", "Scheduled")
                 time_colour = LIVE if status.lower() == "live" else SCHEDULED
 
-                draw.text((1, y), "TRAM", font=dest_font, fill=TRAM)
+                draw.text((1, y), "TRAM", font=font, fill=TRAM)
 
                 if departure.get("is_minutes"):
-                    unit = "min"
-                    unit_width = draw.textbbox((0, 0), unit, font=unit_font)[2]
-                    number_width = draw.textbbox((0, 0), time_text, font=row_font)[2]
-                    time_x = width - unit_width - number_width - 3
-                    draw.text((time_x, y), time_text, font=row_font, fill=time_colour)
-                    draw.text((time_x + number_width + 2, y + 2), unit, font=unit_font, fill=time_colour)
+                    time_display = f"{time_text} min"
                 else:
-                    time_width = draw.textbbox((0, 0), time_text, font=row_font)[2]
-                    time_x = width - time_width - 1
-                    draw.text((time_x, y), time_text, font=row_font, fill=time_colour)
+                    time_display = time_text
+                time_width = draw.textbbox((0, 0), time_display, font=font)[2]
+                time_x = width - time_width - 1
+                draw.text((time_x, y), time_display, font=font, fill=time_colour)
 
-                dest_x = 29
+                dest_x = 28
                 destination = self._fit(
                     draw,
                     departure["destination"],
-                    dest_font,
+                    font,
                     max(1, time_x - dest_x - 3),
                 )
-                draw.text((dest_x, y + 1), destination, font=dest_font, fill=WHITE)
+                draw.text((dest_x, y), destination, font=font, fill=WHITE)
 
         self.display_manager.image = image
         self.display_manager.update_display()
