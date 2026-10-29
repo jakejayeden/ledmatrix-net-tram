@@ -3,7 +3,7 @@ NET Tram Departures plugin for ChuckBuilds LEDMatrix.
 
 Reads a configured public Traveline stop page. Stop details are supplied
 locally through the LEDMatrix WebUI and are not hard-coded in this plugin.
-Tuned for 128x32 displays.
+Designed for 32px-high LEDMatrix displays with adaptive display width.
 """
 from __future__ import annotations
 
@@ -127,7 +127,6 @@ class NETTramDeparturesPlugin(BasePlugin):
                         seen.add(key)
                         results.append(departure)
 
-        # Fallback for a changed page structure: parse the flattened accessible text.
         if not results:
             results = self._parse_flat_text(page)
 
@@ -148,7 +147,6 @@ class NETTramDeparturesPlugin(BasePlugin):
             destination, raw_time, status = structured.groups()
             return self._make_departure(destination, raw_time, status)
 
-        # Compact visible text fallback, e.g. "TRAM Hucknall 13 mins".
         compact = re.search(
             r"\bTRAM\s+(.{1,60}?)\s+(Due|\d{1,3}\s*(?:mins?|minutes?)|\d{1,2}:\d{2})(?:\s+(Live|Scheduled))?(?:\s|$)",
             text,
@@ -195,8 +193,7 @@ class NETTramDeparturesPlugin(BasePlugin):
 
     @staticmethod
     def _font():
-        # Match the Apple Calendar plugin exactly: Pillow's built-in default
-        # bitmap font. Do not substitute a TTF/BDF font here.
+        # Match Apple Calendar typography: Pillow's built-in default bitmap font.
         return ImageFont.load_default()
 
     @staticmethod
@@ -209,13 +206,18 @@ class NETTramDeparturesPlugin(BasePlugin):
         return text + ".."
 
     def display(self, force_clear=False):
-        # The target panel is 128x32. Using the same Pillow default font and
-        # drawing path as Apple Calendar keeps typography visually consistent.
-        image = Image.new("RGB", (128, 32), BG)
+        # Keep Apple Calendar's Pillow default font, but use the LEDMatrix's
+        # configured dimensions so the same plugin adapts to 128x32, 256x32,
+        # and other compatible widths without hard-coded cropping.
+        width = max(1, int(self.display_manager.width))
+        height = max(1, int(self.display_manager.height))
+        image = Image.new("RGB", (width, height), BG)
         draw = ImageDraw.Draw(image)
         font = self._font()
 
-        width = 128
+        # Pillow's default bitmap font has a fixed size, so it cannot be scaled
+        # down like a TTF. Instead, move the divider lower and the header up by
+        # one pixel to give the glyph descenders clear breathing room.
         clock = self.last_updated or "--:--"
         clock_width = draw.textbbox((0, 0), clock, font=font)[2]
         clock_x = width - clock_width - 1
@@ -225,17 +227,17 @@ class NETTramDeparturesPlugin(BasePlugin):
             font,
             max(20, clock_x - 4),
         )
-        draw.text((1, 0), header, font=font, fill=WHITE)
-        draw.text((clock_x, 0), clock, font=font, fill=WHITE)
-        draw.line((0, 9, width - 1, 9), fill=TRAM)
+        draw.text((1, -2), header, font=font, fill=WHITE)
+        draw.text((clock_x, -2), clock, font=font, fill=WHITE)
+        draw.line((0, 10, width - 1, 10), fill=TRAM)
 
         if not self.departures:
             message = "DATA ERROR" if self.error else "NO TRAMS"
             colour = ERROR if self.error else SCHEDULED
-            draw.text((2, 14), message, font=font, fill=colour)
+            draw.text((2, 12), message, font=font, fill=colour)
         else:
             for index, departure in enumerate(self.departures[:2]):
-                y = 11 + index * 10
+                y = 10 + index * 10
                 time_text = departure["time"][:6]
                 status = departure.get("status", "Scheduled")
                 time_colour = LIVE if status.lower() == "live" else SCHEDULED
